@@ -78,7 +78,7 @@ class DCGAN(object):
         self.D, self.D_logits = self.discriminator(self.images)
 
         self.sampler = self.sampler(self.z)
-        self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
+        self.D_, self.D_logits_ = self.discriminator(self.G, reuse=False)
 
         self.d_sum = tf.histogram_summary("d", self.D)
         self.d__sum = tf.histogram_summary("d_", self.D_)
