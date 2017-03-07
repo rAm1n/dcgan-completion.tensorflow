@@ -104,7 +104,7 @@ class DCGAN(object):
 
         t_vars = tf.trainable_variables()
         
-        print(t_vars)
+        print([var.name for var in t_vars])
 
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
