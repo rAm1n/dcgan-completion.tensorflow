@@ -10,6 +10,15 @@ from tensorflow.python.framework import ops
 
 from utils import *
 
+# create scratch variable scope to get around reuse=True issues with
+# temporary variables
+# (hack around https://github.com/tensorflow/tensorflow/issues/5827)
+with tf.variable_scope("scratch", reuse=False) as scratch_varscope:
+    SCRATCH_VARSCOPE = scratch_varscope
+assert SCRATCH_VARSCOPE == scratch_varscope
+assert SCRATCH_VARSCOPE.reuse == False
+
+
 class batch_norm(object):
     """Code modification of http://stackoverflow.com/a/33950177"""
     def __init__(self, epsilon=1e-5, momentum = 0.9, name="batch_norm"):
