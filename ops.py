@@ -13,7 +13,7 @@ from utils import *
 # create scratch variable scope to get around reuse=True issues with
 # temporary variables
 # (hack around https://github.com/tensorflow/tensorflow/issues/5827)
-with tf.variable_scope("scratch", reuse=False) as scratch_varscope:
+with tf.variable_scope("scratch", reuse=True) as scratch_varscope:
     SCRATCH_VARSCOPE = scratch_varscope
 #assert SCRATCH_VARSCOPE == scratch_varscope
 #assert SCRATCH_VARSCOPE.reuse == False
