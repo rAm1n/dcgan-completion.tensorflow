@@ -104,10 +104,11 @@ class DCGAN(object):
 
         t_vars = tf.trainable_variables()
         
-        print([var.name for var in t_vars])
 
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
+
+        print([var.name for var in self.d_vars])
 
         self.saver = tf.train.Saver(max_to_keep=1)
 
