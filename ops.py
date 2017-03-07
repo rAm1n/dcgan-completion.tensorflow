@@ -10,15 +10,6 @@ from tensorflow.python.framework import ops
 
 from utils import *
 
-# create scratch variable scope to get around reuse=True issues with
-# temporary variables
-# (hack around https://github.com/tensorflow/tensorflow/issues/5827)
-with tf.variable_scope("scratch", reuse=True) as scratch_varscope:
-    SCRATCH_VARSCOPE = scratch_varscope
-#assert SCRATCH_VARSCOPE == scratch_varscope
-#assert SCRATCH_VARSCOPE.reuse == False
-
-
 class batch_norm(object):
     """Code modification of http://stackoverflow.com/a/33950177"""
     def __init__(self, epsilon=1e-5, momentum = 0.9, name="batch_norm"):
@@ -30,35 +21,12 @@ class batch_norm(object):
             self.name = name
 
     def __call__(self, x, train=True):
-        shape = x.get_shape().as_list()
+        return tf.contrib.layers.batch_norm(x, decay=self.momentum, updates_collections=None, epsilon=self.epsilon, scale=True, scope=self.name)
 
-        if train:
-            with tf.variable_scope(self.name) as scope:
-                self.beta = tf.get_variable("beta", [shape[-1]],
-                                    initializer=tf.constant_initializer(0.))
-                self.gamma = tf.get_variable("gamma", [shape[-1]],
-                                    initializer=tf.random_normal_initializer(1., 0.02))
-                with tf.variable_scope(SCRATCH_VARSCOPE) as scratch_varscope:
-                    #scratch_varscope.reuse = False
-                    batch_mean, batch_var = tf.nn.moments(x, [0, 1, 2], name='moments')
-                    ema_apply_op = self.ema.apply([batch_mean, batch_var])
-                    self.ema_mean, self.ema_var = self.ema.average(batch_mean), self.ema.average(batch_var)
-                    with tf.control_dependencies([ema_apply_op]):
-                        mean, var = tf.identity(batch_mean), tf.identity(batch_var)
-        else:
-            mean, var = self.ema_mean, self.ema_var
-
-        normed = tf.nn.batch_norm_with_global_normalization(
-                x, mean, var, self.beta, self.gamma, self.epsilon, scale_after_normalization=True)
-
-        return normed
 def binary_cross_entropy(preds, targets, name=None):
     """Computes binary cross entropy given `preds`.
-
     For brevity, let `x = `, `z = targets`.  The logistic loss is
-
         loss(x, z) = - sum_i (x[i] * log(z[i]) + (1 - x[i]) * log(1 - z[i]))
-
     Args:
         preds: A `Tensor` of type `float32` or `float64`.
         targets: A `Tensor` of the same type and shape as `preds`.
