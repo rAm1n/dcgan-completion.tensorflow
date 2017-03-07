@@ -103,6 +103,8 @@ class DCGAN(object):
         self.d_loss_sum = tf.summary.scalar("d_loss", self.d_loss)
 
         t_vars = tf.trainable_variables()
+        
+        print(t_vars)
 
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
