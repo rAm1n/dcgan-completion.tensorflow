@@ -226,9 +226,13 @@ Initializing a new one.
         assert(isLoaded)
 
         # data = glob(os.path.join(config.dataset, "*.png"))
+        
+        #config.imgs is all the images dir to be completed
         nImgs = len(config.imgs)
-
-        batch_idxs = int(np.ceil(nImgs/self.batch_size))
+        
+        #batchsize is one completed img(8*8 now)
+        #this is to compute how many 8*8 images are needed.
+        batch_idxs = int(np.ceil(nImgs/self.batch_size)) #np.ceil gets the larger integer of float
         if config.maskType == 'random':
             fraction_masked = 0.2
             mask = np.ones(self.image_shape)
@@ -247,22 +251,33 @@ Initializing a new one.
             mask[:,:c,:] = 0.0
         elif config.maskType == 'full':
             mask = np.ones(self.image_shape)
+        elif config.maskType == 'white': #mask all the white pixels in the original image.
+            mask = np.ones(self.image_shape)
+
         else:
             assert(False)
 
         for idx in xrange(0, batch_idxs):
-            l = idx*self.batch_size
-            u = min((idx+1)*self.batch_size, nImgs)
-            batchSz = u-l
-            batch_files = config.imgs[l:u]
+            #for each 8*8 image
+            
+            l = idx*self.batch_size #starting image index
+            u = min((idx+1)*self.batch_size, nImgs) #ending image index
+            batchSz = u-l #number of images in this batch
+            batch_files = config.imgs[l:u] #images dir to be completed in this batch
             batch = [get_image(batch_file, self.image_size, is_crop=self.is_crop)
-                     for batch_file in batch_files]
-            batch_images = np.array(batch).astype(np.float32)
+                     for batch_file in batch_files] #load all the images to the list
+            batch_images = np.array(batch).astype(np.float32) #convert the images into np matrix
             if batchSz < self.batch_size:
                 print(batchSz)
-                padSz = ((0, int(self.batch_size-batchSz)), (0,0), (0,0), (0,0))
-                batch_images = np.pad(batch_images, padSz, 'constant')
+                padSz = ((0, int(self.batch_size-batchSz)), (0,0), (0,0), (0,0))  #generator - to complete
+                batch_images = np.pad(batch_images, padSz, 'constant') #to make the current batch the same size as generator
                 batch_images = batch_images.astype(np.float32)
+                
+            print(batch_images)
+
+                
+            if config.maskType == 'white': #mask all the white pixels in the original image.
+                mask = np.ones(self.image_shape)
 
             batch_mask = np.resize(mask, [self.batch_size] + self.image_shape)
             zhats = np.random.uniform(-1, 1, size=(self.batch_size, self.z_dim))
