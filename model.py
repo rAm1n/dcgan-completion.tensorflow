@@ -266,20 +266,30 @@ Initializing a new one.
             batch_files = config.imgs[l:u] #images dir to be completed in this batch
             batch = [get_image(batch_file, self.image_size, is_crop=self.is_crop)
                      for batch_file in batch_files] #load all the images to the list
+
             batch_images = np.array(batch).astype(np.float32) #convert the images into np matrix
+
+
             if batchSz < self.batch_size:
                 print(batchSz)
                 padSz = ((0, int(self.batch_size-batchSz)), (0,0), (0,0), (0,0))  #generator - to complete
                 batch_images = np.pad(batch_images, padSz, 'constant') #to make the current batch the same size as generator
                 batch_images = batch_images.astype(np.float32)
-                
             print(batch_images)
+            print(batch_images.shape)
 
-                
-            if config.maskType == 'white': #mask all the white pixels in the original image.
-                mask = np.ones(self.image_shape)
+
 
             batch_mask = np.resize(mask, [self.batch_size] + self.image_shape)
+            if config.maskType == 'white': #mask all the white pixels in the original image.
+                print(batch_mask)
+                print(batch_mask.shape)
+                batch_mask = batch_images < 1
+
+
+
+
+
             zhats = np.random.uniform(-1, 1, size=(self.batch_size, self.z_dim))
             v = 0
 
