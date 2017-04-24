@@ -18,7 +18,7 @@ class DCGAN(object):
     def __init__(self, sess, image_size=64, is_crop=False,
                  batch_size=64, sample_size=64,
                  z_dim=100, gf_dim=64, df_dim=64,
-                 gfc_dim=1024, dfc_dim=1024, c_dim=3,
+                 gfc_dim=1024, dfc_dim=1024, c_dim=1,
                  checkpoint_dir=None, lam=0.1):
         """
 
@@ -37,7 +37,7 @@ class DCGAN(object):
         self.batch_size = batch_size
         self.image_size = image_size
         self.sample_size = sample_size
-        self.image_shape = [image_size, image_size, 3]
+        self.image_shape = [image_size, image_size, 1]
 
         self.z_dim = z_dim
 
@@ -49,7 +49,7 @@ class DCGAN(object):
 
         self.lam = lam
 
-        self.c_dim = 3
+        self.c_dim = 1
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
@@ -65,6 +65,24 @@ class DCGAN(object):
         self.build_model()
 
         self.model_name = "DCGAN.model"
+
+        self.loaded = False
+        self.counter = 0
+
+    def _load_model(self,config):
+        if self.loaded:
+            return True
+        else:
+            self.data = glob(os.path.join(config.dataset, "*.png"))
+            #np.random.shuffle(data)
+            assert(len(self.data) > 0)
+            if self.load(self.checkpoint_dir):
+                print("Ok model loaded")
+            else:
+                print('no pre-trained model found')
+
+        self.loaded = True
+        return True
 
     def build_model(self):
         self.images = tf.placeholder(
@@ -216,6 +234,43 @@ Initializing a new one.
                     self.save(config.checkpoint_dir, counter)
 
 
+    def generate_result(self, config, size):
+
+        self._load_model(config)
+        import random
+
+        data = glob(os.path.join(config.dataset, "*.png"))
+
+
+        sample_z = np.random.uniform(-1, 1, size=(self.sample_size , self.z_dim))
+        sample_files = self.data[0:self.sample_size]
+        sample = [get_image(sample_file, self.image_size, is_crop=self.is_crop) for sample_file in sample_files]
+        sample_images = np.array(sample).astype(np.float32)
+
+        samples, d_loss, g_loss = self.sess.run(
+            [self.sampler, self.d_loss, self.g_loss],
+            feed_dict={self.z: sample_z, self.images: sample_images}
+        )
+
+        samples1, d_loss, g_loss = self.sess.run(
+            [self.sampler, self.d_loss, self.g_loss],
+            feed_dict={self.z: sample_z, self.images: sample_images}
+        )
+
+        samples2, d_loss, g_loss = self.sess.run(
+            [self.sampler, self.d_loss, self.g_loss],
+            feed_dict={self.z: sample_z, self.images: sample_images}
+        )
+	samples = np.concatenate((samples, samples1), axis=0)
+	samples = samples[:121]
+        save_images(samples, [11, 11],
+                    './samples/black/{0}.png'.format(self.counter))
+        self.counter+=1
+	print(self.counter)
+        print('done')
+
+
+
     def complete(self, config):
         os.makedirs(os.path.join(config.outDir, 'hats_imgs'), exist_ok=True)
         os.makedirs(os.path.join(config.outDir, 'completed'), exist_ok=True)
@@ -238,7 +293,7 @@ Initializing a new one.
             mask = np.ones(self.image_shape)
             mask[np.random.random(self.image_shape[:2]) < fraction_masked] = 0.0
         elif config.maskType == 'center':
-            scale = 0.25
+            scale = 0.35
             assert(scale <= 0.5)
             mask = np.ones(self.image_shape)
             sz = self.image_size
@@ -275,8 +330,6 @@ Initializing a new one.
                 padSz = ((0, int(self.batch_size-batchSz)), (0,0), (0,0), (0,0))  #generator - to complete
                 batch_images = np.pad(batch_images, padSz, 'constant') #to make the current batch the same size as generator
                 batch_images = batch_images.astype(np.float32)
-            print(batch_images)
-            print(batch_images.shape)
 
 
 
@@ -333,7 +386,6 @@ Initializing a new one.
         with tf.variable_scope("discriminator") as scope:
             if reuse:
                 scope.reuse_variables()
-
             h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
             h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv')))
             h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv')))
@@ -363,7 +415,7 @@ Initializing a new one.
             h3 = tf.nn.relu(self.g_bn3(h3))
 
             h4, self.h4_w, self.h4_b = conv2d_transpose(h3,
-                [self.batch_size, 64, 64, 3], name='g_h4', with_w=True)
+                [self.batch_size, 64, 64, 1], name='g_h4', with_w=True)
 
             return tf.nn.tanh(h4)
 
@@ -386,7 +438,7 @@ Initializing a new one.
             h3 = conv2d_transpose(h2, [self.batch_size, 32, 32, self.gf_dim*1], name='g_h3')
             h3 = tf.nn.relu(self.g_bn3(h3, train=False))
 
-            h4 = conv2d_transpose(h3, [self.batch_size, 64, 64, 3], name='g_h4')
+            h4 = conv2d_transpose(h3, [self.batch_size, 64, 64, 1], name='g_h4')
 
             return tf.nn.tanh(h4)
 

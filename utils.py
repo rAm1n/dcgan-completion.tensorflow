@@ -25,7 +25,7 @@ def save_images(images, size, image_path):
     return imsave(inverse_transform(images), size, image_path)
 
 def imread(path):
-    return scipy.misc.imread(path, mode='RGB').astype(np.float)
+    return scipy.misc.imread(path, mode='L').astype(np.float)
 
 def merge_images(images, size):
     return inverse_transform(images)
@@ -59,6 +59,7 @@ def transform(image, npx=64, is_crop=True):
     else:
         cropped_image = image
     return np.array(cropped_image)/127.5 - 1.
+    return np.expand_dims(np.array(cropped_image), axis=2)/127.5 - 1.
 
 def inverse_transform(images):
     return (images+1.)/2.
